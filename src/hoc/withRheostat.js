@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Animated,
   PanResponder,
+  TouchableOpacity,
 } from 'react-native';
 import PropTypes from 'prop-types';
 import {
@@ -73,6 +74,7 @@ const withRheostat = (ChartCompo = null) => {
       this.moveSlide = this.moveSlide.bind(this);
       this.validatePosition = this.validatePosition.bind(this);
       this.getNextState = this.getNextState.bind(this);
+      this.handleClick = this.handleClick.bind(this);
       this.pitStyleCache = {};
     }
 
@@ -238,13 +240,31 @@ const withRheostat = (ChartCompo = null) => {
         // handlePos,
         containerSize: {
           width,
-        },
-        values,
+        }, 
+        values
       } = this.state;
       const proposedPosition = (gestureState.dx / width) * PERCENT_FULL
           + this.previousHandlePos[idx];
       const snapPosition = this.getSnapPosition(proposedPosition);
       const nextState = this.getNextState(idx, snapPosition);
+      if (onValuesUpdated) onValuesUpdated(this.getPublicState());
+    }
+
+    handleClick(evt) {
+      if (evt.nativeEvent.locationX === null) return;
+      let idx = 0;
+      const { handlePos, containerSize: { width } } = this.state;
+      const proposedPosition = (evt.nativeEvent.locationX / width) * PERCENT_FULL;
+      if (handlePos.length > 1
+        // eslint-disable-next-line no-underscore-dangle
+        && Math.abs(handlePos[0].__getValue() - proposedPosition)
+        // eslint-disable-next-line no-underscore-dangle
+        > Math.abs(handlePos[1].__getValue() - proposedPosition)) {
+        idx = 1;
+      }
+      const { onValuesUpdated } = this.props;
+      const snapPosition = this.getSnapPosition(proposedPosition);
+      this.getNextState(idx, snapPosition);
       if (onValuesUpdated) onValuesUpdated(this.getPublicState());
     }
 
@@ -300,11 +320,14 @@ const withRheostat = (ChartCompo = null) => {
       } = this.state;
 
       return (
-          <View style={[{
-            marginTop: 30,
-            marginHorizontal: 10,
-            position: 'relative',
-          }]}
+        <TouchableOpacity activeOpacity={1} onPressIn={this.handleClick}>
+          <View
+            style={[{
+              marginTop: 30,
+              marginHorizontal: 10,
+              position: 'relative',
+              marginBottom: 20,
+            }]}
           >
             {ChartCompo && (
             <ChartCompo
@@ -352,7 +375,9 @@ const withRheostat = (ChartCompo = null) => {
                     renderToHardwareTextureAndroid
                     style={[{ position: 'absolute', height: 'auto' }, this.getProgressStyle(idx)]}
                   >
-                    <ProgressBar theme={theme} />
+                    <TouchableOpacity activeOpacity={1}>
+                      <ProgressBar theme={theme} />
+                    </TouchableOpacity>
                   </Animated.View>
                 );
               })}
@@ -372,6 +397,7 @@ const withRheostat = (ChartCompo = null) => {
               {children}
             </View>
           </View>
+        </TouchableOpacity>
       );
     }
   }
