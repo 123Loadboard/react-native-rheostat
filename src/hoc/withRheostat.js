@@ -305,6 +305,8 @@ const withRheostat = (ChartCompo = null) => {
         children,
         disabled,
         handle: Handle,
+        handleContainerStyle,
+        containerStyle,
         max,
         min,
         orientation,
@@ -322,12 +324,7 @@ const withRheostat = (ChartCompo = null) => {
       return (
         <TouchableOpacity activeOpacity={1} onPressIn={this.handleClick}>
           <View
-            style={[{
-              marginTop: 30,
-              marginHorizontal: 10,
-              position: 'relative',
-              marginBottom: 20,
-            }]}
+            style={[Style.container, containerStyle]}
           >
             {ChartCompo && (
             <ChartCompo
@@ -347,7 +344,7 @@ const withRheostat = (ChartCompo = null) => {
                 : { transform: [{ translateX: pos }] };
               return (
                 <Animated.View
-                  style={[Style.handleContainer, handleStyle]}
+                  style={[Style.handleContainer, handleStyle, handleContainerStyle]}
                   {...this._panResponders[idx].panHandlers}
                   onLayout={this.getHandleDimensions}
                   renderToHardwareTextureAndroid
@@ -362,7 +359,7 @@ const withRheostat = (ChartCompo = null) => {
             })}
             <View
               onLayout={this.getRheostatDimensions}
-              style={[Style.container, orientation === 'horizontal' && Style.rheostatHorizontal]}
+              style={[Style.progressContainer, orientation === 'horizontal' && Style.rheostatHorizontal]}
             >
               <View style={[Style.rheostatBackground, Style.rheostatHorizontalBackground]} />
               {handlePos.map((value, idx, arr) => {
@@ -451,6 +448,12 @@ const withRheostat = (ChartCompo = null) => {
 
 const Style = StyleSheet.create({
 
+  container: {
+    marginTop: 30,
+    marginHorizontal: 10,
+    position: 'relative',
+    marginBottom: 20,
+  },
   rheostatHorizontal: {
     position: 'relative',
   },
@@ -462,12 +465,12 @@ const Style = StyleSheet.create({
   handleContainer: {
     zIndex: 3,
     position: 'absolute',
-    width: 30,
-    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginLeft: -15,
-    bottom: -15,
+    bottom: -10,
   },
-  container: {
+  progressContainer: {
     justifyContent: 'center',
   },
   rheostatBackground: {
