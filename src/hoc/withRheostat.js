@@ -1,30 +1,33 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   StyleSheet,
   Animated,
   PanResponder,
   TouchableOpacity,
-} from 'react-native';
-import PropTypes from 'prop-types';
+} from "react-native";
+import PropTypes from "prop-types";
 import {
   HORIZONTAL,
   VERTICAL,
   PERCENT_FULL,
   PERCENT_EMPTY,
-} from '../constants/SliderConstants';
-import DefaultProgressBar from '../components/DefaultProgressBar';
-import linear from '../algorithms/linear';
-import DefaultHandler from '../components/DefaultHandler';
+} from "../constants/SliderConstants";
+import DefaultProgressBar from "../components/DefaultProgressBar";
+import linear from "../algorithms/linear";
+import DefaultHandler from "../components/DefaultHandler";
 
 const PropTypeArrOfNumber = PropTypes.arrayOf(PropTypes.number);
-const PropTypeReactComponent = PropTypes.oneOfType([PropTypes.func, PropTypes.object]);
+const PropTypeReactComponent = PropTypes.oneOfType([
+  PropTypes.func,
+  PropTypes.object,
+]);
 
 const withRheostat = (ChartCompo = null) => {
   class Rheostat extends React.PureComponent {
     static defaultProps = {
       algorithm: linear,
-      className: '',
+      className: "",
       children: null,
       disabled: false,
       handle: DefaultHandler,
@@ -36,7 +39,7 @@ const withRheostat = (ChartCompo = null) => {
       onSliderDragMove: null,
       onSliderDragStart: null,
       onValuesUpdated: null,
-      orientation: 'horizontal',
+      orientation: "horizontal",
       pitComponent: null,
       pitPoints: [],
       progressBar: DefaultProgressBar,
@@ -44,26 +47,21 @@ const withRheostat = (ChartCompo = null) => {
       snapPoints: [],
       getNextHandlePosition: null,
       theme: undefined,
-    }
+    };
 
     constructor(props) {
       super(props);
 
-      const {
-        algorithm,
-        max,
-        min,
-        values,
-      } = this.props;
+      const { algorithm, max, min, values } = this.props;
       this.state = {
         handleDimensions: 0,
         sliderBox: {},
         slidingIndex: null,
         containerSize: { width: 0, height: 0 },
-        values: values.map(value => new Animated.Value(value)),
-        handlePos: values.map(value => new Animated.Value(
-          algorithm.getPosition(value, min, max),
-        )),
+        values: values.map((value) => new Animated.Value(value)),
+        handlePos: values.map(
+          (value) => new Animated.Value(algorithm.getPosition(value, min, max))
+        ),
       };
       this.getPublicState = this.getPublicState.bind(this);
       this.getProgressStyle = this.getProgressStyle.bind(this);
@@ -79,48 +77,57 @@ const withRheostat = (ChartCompo = null) => {
     }
 
     componentWillMount() {
-      const {
-        handlePos,
-      } = this.state;
+      const { handlePos } = this.state;
       const customPanResponder = function (idx, start, move, end) {
         return PanResponder.create({
           /* eslint-disable */
-              onStartShouldSetPanResponder: (evt, gestureState) => true,
-              onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
-              onMoveShouldSetPanResponder: (evt, gestureState) => false,
-              onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
-              onPanResponderGrant: (evt, gestureState) => start(idx),
-              onPanResponderMove: (evt, gestureState) => move(idx, gestureState),
-              onPanResponderTerminationRequest: (evt, gestureState) => false,
-              onPanResponderRelease: (evt, gestureState) => end(idx, gestureState),
-              onPanResponderTerminate: (evt, gestureState) => end(idx, gestureState),
-              // onShouldBlockNativeResponder: (evt, gestureState) => true
-              /* eslint-enable */
+          onStartShouldSetPanResponder: (evt, gestureState) => true,
+          onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+          onMoveShouldSetPanResponder: (evt, gestureState) => false,
+          onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+          onPanResponderGrant: (evt, gestureState) => start(idx),
+          onPanResponderMove: (evt, gestureState) => move(idx, gestureState),
+          onPanResponderTerminationRequest: (evt, gestureState) => false,
+          onPanResponderRelease: (evt, gestureState) => end(idx, gestureState),
+          onPanResponderTerminate: (evt, gestureState) =>
+            end(idx, gestureState),
+          // onShouldBlockNativeResponder: (evt, gestureState) => true
+          /* eslint-enable */
         });
       };
-      this._panResponders = handlePos.map(
-        (val, idx, arr) => customPanResponder(
-          idx, this.startSlide, this.moveSlide, this.endSlide,
-        ),
+      this._panResponders = handlePos.map((val, idx, arr) =>
+        customPanResponder(idx, this.startSlide, this.moveSlide, this.endSlide)
       );
+    }
+
+    componentDidUpdate(prevProps) {
+      if (
+        prevProps.values !== this.props.values &&
+        this.props.handlePos.length === this.props.values.length
+      ) {
+        this.state.handlePos.forEach((pos, index) => {
+          pos.setValue(
+            this.props.algorithm.getPosition(
+              this.props.values[index],
+              this.props.min,
+              this.props.max
+            )
+          );
+        });
+      }
     }
 
     getClosestSnapPoint(value) {
       const { snapPoints } = this.props;
       if (!snapPoints.length) return value;
 
-      return snapPoints.reduce((snapTo, snap) => (
+      return snapPoints.reduce((snapTo, snap) =>
         Math.abs(snapTo - value) < Math.abs(snap - value) ? snapTo : snap
-      ));
+      );
     }
 
     getSnapPosition(positionPercent) {
-      const {
-        algorithm,
-        max,
-        min,
-        snap,
-      } = this.props;
+      const { algorithm, max, min, snap } = this.props;
 
       if (!snap) return positionPercent;
       const value = algorithm.getValue(positionPercent, min, max);
@@ -129,19 +136,18 @@ const withRheostat = (ChartCompo = null) => {
     }
 
     getNextState(idx, proposedPosition) {
-      const {
-        handlePos,
-        values,
-      } = this.state;
+      const { handlePos, values } = this.state;
 
       const { max, min, algorithm } = this.props;
       const actualPosition = this.validatePosition(idx, proposedPosition);
-      values.forEach((value, index) => (
-        index === idx && value.setValue(algorithm.getValue(actualPosition, min, max))
-      ));
-      handlePos.forEach((value, index) => (
-        index === idx && value.setValue(actualPosition)
-      ));
+      values.forEach(
+        (value, index) =>
+          index === idx &&
+          value.setValue(algorithm.getValue(actualPosition, min, max))
+      );
+      handlePos.forEach(
+        (value, index) => index === idx && value.setValue(actualPosition)
+      );
       return {
         handlePos,
         // values: nextHandlePos.map(pos => algorithm.getValue(pos, min, max)),
@@ -151,100 +157,94 @@ const withRheostat = (ChartCompo = null) => {
 
     getPublicState() {
       const { values } = this.state;
-      const {
-        min,
-        max,
-      } = this.props;
+      const { min, max } = this.props;
 
       return {
         max,
         min,
-        values: values.map(value => value.__getValue()),
+        values: values.map((value) => value.__getValue()),
       };
     }
 
     getProgressStyle(idx) {
-      const {
-        orientation,
-      } = this.props;
+      const { orientation } = this.props;
       const {
         handlePos,
         containerSize: { width },
       } = this.state;
 
-      const pos = handlePos[idx].interpolate({
-        inputRange: [0, 100],
-        outputRange: [0, width],
-      }, { useNativeDriver: true });
+      const pos = handlePos[idx].interpolate(
+        {
+          inputRange: [0, 100],
+          outputRange: [0, width],
+        },
+        { useNativeDriver: true }
+      );
 
       if (idx === 0) {
-        return orientation === 'vertical'
+        return orientation === "vertical"
           ? { height: pos, top: 0 }
           : { left: 0, width: pos };
       }
-      const prevValue = handlePos[idx - 1].interpolate({
-        inputRange: [0, 100],
-        outputRange: [0, -width],
-      }, { useNativeDriver: true });
-      const prevPos = handlePos[idx - 1].interpolate({
-        inputRange: [0, 100],
-        outputRange: [0, width],
-      }, { useNativeDriver: true });
+      const prevValue = handlePos[idx - 1].interpolate(
+        {
+          inputRange: [0, 100],
+          outputRange: [0, -width],
+        },
+        { useNativeDriver: true }
+      );
+      const prevPos = handlePos[idx - 1].interpolate(
+        {
+          inputRange: [0, 100],
+          outputRange: [0, width],
+        },
+        { useNativeDriver: true }
+      );
       const diffValue = Animated.add(pos, prevValue);
-      return orientation === 'vertical'
+      return orientation === "vertical"
         ? { transform: [{ translateY: prevPos }], height: diffValue }
         : { transform: [{ translateX: prevPos }], width: diffValue };
     }
 
     getHandleDimensions = (event) => {
-      const {
-        x, y, width, height,
-      } = event.nativeEvent.layout;
+      const { x, y, width, height } = event.nativeEvent.layout;
       this.setState({
         handleDimensions: {
           width,
           height,
         },
       });
-    }
+    };
 
     getRheostatDimensions = (event) => {
-      const {
-        x, y, width, height,
-      } = event.nativeEvent.layout;
+      const { x, y, width, height } = event.nativeEvent.layout;
       this.setState({
         containerSize: {
           width,
           height,
         },
       });
-    }
+    };
 
     startSlide(idx) {
-      const {
-        onSliderDragStart,
-      } = this.props;
+      const { onSliderDragStart } = this.props;
       const {
         handlePos,
         // values
       } = this.state;
       onSliderDragStart && onSliderDragStart(); //eslint-disable-line
-      this.previousHandlePos = handlePos.map(value => value.__getValue());
+      this.previousHandlePos = handlePos.map((value) => value.__getValue());
     }
 
     moveSlide(idx, gestureState) {
-      const {
-        onValuesUpdated,
-      } = this.props;
+      const { onValuesUpdated } = this.props;
       const {
         // handlePos,
-        containerSize: {
-          width,
-        }, 
-        values
+        containerSize: { width },
+        values,
       } = this.state;
-      const proposedPosition = (gestureState.dx / width) * PERCENT_FULL
-          + this.previousHandlePos[idx];
+      const proposedPosition =
+        (gestureState.dx / width) * PERCENT_FULL + this.previousHandlePos[idx];
       const snapPosition = this.getSnapPosition(proposedPosition);
       const nextState = this.getNextState(idx, snapPosition);
       if (onValuesUpdated) onValuesUpdated(this.getPublicState());
@@ -253,13 +253,19 @@ const withRheostat = (ChartCompo = null) => {
     handleClick(evt) {
       if (evt.nativeEvent.locationX === null) return;
       let idx = 0;
-      const { handlePos, containerSize: { width } } = this.state;
-      const proposedPosition = (evt.nativeEvent.locationX / width) * PERCENT_FULL;
-      if (handlePos.length > 1
+      const {
+        handlePos,
+        containerSize: { width },
+      } = this.state;
+      const proposedPosition =
+        (evt.nativeEvent.locationX / width) * PERCENT_FULL;
+      if (
+        handlePos.length > 1 &&
         // eslint-disable-next-line no-underscore-dangle
-        && Math.abs(handlePos[0].__getValue() - proposedPosition)
-        // eslint-disable-next-line no-underscore-dangle
-        > Math.abs(handlePos[1].__getValue() - proposedPosition)) {
+        Math.abs(handlePos[0].__getValue() - proposedPosition) >
+          // eslint-disable-next-line no-underscore-dangle
+          Math.abs(handlePos[1].__getValue() - proposedPosition)
+      ) {
         idx = 1;
       }
       const { onValuesUpdated } = this.props;
@@ -274,28 +280,24 @@ const withRheostat = (ChartCompo = null) => {
     }
 
     validatePosition(idx, proposedPosition) {
-      const {
-        handlePos,
-        values,
-        handleDimensions,
-        containerSize,
-      } = this.state;
+      const { handlePos, values, handleDimensions, containerSize } = this.state;
       const nextPosition = proposedPosition;
       const { orientation } = this.props;
-      const handlePercentage = orientation === VERTICAL
-        ? ((handleDimensions.width / containerSize.height) * PERCENT_FULL) / 2
-        : ((handleDimensions.width / containerSize.width) * PERCENT_FULL) / 2;
+      const handlePercentage =
+        orientation === VERTICAL
+          ? ((handleDimensions.width / containerSize.height) * PERCENT_FULL) / 2
+          : ((handleDimensions.width / containerSize.width) * PERCENT_FULL) / 2;
       // nextPosition should be handlePos[idx-1] < nextPosition < handlePos[idx+1]
       return Math.max(
         Math.min(
           nextPosition,
           handlePos[idx + 1] !== undefined
             ? handlePos[idx + 1].__getValue() - handlePercentage
-            : PERCENT_FULL, // 100% is the highest value
+            : PERCENT_FULL // 100% is the highest value
         ),
         handlePos[idx - 1] !== undefined
           ? handlePos[idx - 1].__getValue() + handlePercentage
-          : PERCENT_EMPTY, // 0% is the lowest value
+          : PERCENT_EMPTY // 0% is the lowest value
       );
     }
 
@@ -316,52 +318,60 @@ const withRheostat = (ChartCompo = null) => {
         svgData,
         theme,
       } = this.props;
-      const {
-        handlePos,
-        containerSize,
-      } = this.state;
+      const { handlePos, containerSize } = this.state;
 
       return (
         <TouchableOpacity activeOpacity={1} onPressIn={this.handleClick}>
-          <View
-            style={[Style.container, containerStyle]}
-          >
+          <View style={[Style.container, containerStyle]}>
             {ChartCompo && (
-            <ChartCompo
-              handlePos={handlePos}
-              data={svgData}
-              width={containerSize.width}
-              theme={theme}
-            />
+              <ChartCompo
+                handlePos={handlePos}
+                data={svgData}
+                width={containerSize.width}
+                theme={theme}
+              />
             )}
             {handlePos.map((value, idx) => {
-              const pos = value.interpolate({
-                inputRange: [0, 100],
-                outputRange: [0, containerSize.width],
-              }, { useNativeDriver: true });
-              const handleStyle = orientation === 'vertical'
-                ? { transform: [{ translateY: pos }] }
-                : { transform: [{ translateX: pos }] };
+              const pos = value.interpolate(
+                {
+                  inputRange: [0, 100],
+                  outputRange: [0, containerSize.width],
+                },
+                { useNativeDriver: true }
+              );
+              const handleStyle =
+                orientation === "vertical"
+                  ? { transform: [{ translateY: pos }] }
+                  : { transform: [{ translateX: pos }] };
               return (
                 <Animated.View
-                  style={[Style.handleContainer, handleStyle, handleContainerStyle]}
+                  style={[
+                    Style.handleContainer,
+                    handleStyle,
+                    handleContainerStyle,
+                  ]}
                   {...this._panResponders[idx].panHandlers}
                   onLayout={this.getHandleDimensions}
                   renderToHardwareTextureAndroid
                   key={`handle-${idx}`}
                 >
-                  <Handle
-                    theme={theme}
-                    style={[Style.handle]}
-                  />
+                  <Handle theme={theme} style={[Style.handle]} />
                 </Animated.View>
               );
             })}
             <View
               onLayout={this.getRheostatDimensions}
-              style={[Style.progressContainer, orientation === 'horizontal' && Style.rheostatHorizontal]}
+              style={[
+                Style.progressContainer,
+                orientation === "horizontal" && Style.rheostatHorizontal,
+              ]}
             >
-              <View style={[Style.rheostatBackground, Style.rheostatHorizontalBackground]} />
+              <View
+                style={[
+                  Style.rheostatBackground,
+                  Style.rheostatHorizontalBackground,
+                ]}
+              />
               {handlePos.map((value, idx, arr) => {
                 if (idx === 0 && arr.length > 1) {
                   return null;
@@ -370,7 +380,10 @@ const withRheostat = (ChartCompo = null) => {
                   <Animated.View
                     key={`progress-bar-${idx}`}
                     renderToHardwareTextureAndroid
-                    style={[{ position: 'absolute', height: 'auto' }, this.getProgressStyle(idx)]}
+                    style={[
+                      { position: "absolute", height: "auto" },
+                      this.getProgressStyle(idx),
+                    ]}
                   >
                     <TouchableOpacity activeOpacity={1}>
                       <ProgressBar theme={theme} />
@@ -378,19 +391,23 @@ const withRheostat = (ChartCompo = null) => {
                   </Animated.View>
                 );
               })}
-              {PitComponent && pitPoints.map((n) => {
-                let pitStyle = this.pitStyleCache[n];
-                if (!pitStyle) {
-                  const pos = algorithm.getPosition(n, min, max);
-                  pitStyle = orientation === 'vertical'
-                    ? { top: `${pos}%`, position: 'absolute' }
-                    : { left: `${pos}%`, position: 'absolute' };
-                  this.pitStyleCache[n] = pitStyle;
-                }
-                return (
-                  <PitComponent key={`pit-${n}`} style={pitStyle}>{n}</PitComponent>
-                );
-              })}
+              {PitComponent &&
+                pitPoints.map((n) => {
+                  let pitStyle = this.pitStyleCache[n];
+                  if (!pitStyle) {
+                    const pos = algorithm.getPosition(n, min, max);
+                    pitStyle =
+                      orientation === "vertical"
+                        ? { top: `${pos}%`, position: "absolute" }
+                        : { left: `${pos}%`, position: "absolute" };
+                    this.pitStyleCache[n] = pitStyle;
+                  }
+                  return (
+                    <PitComponent key={`pit-${n}`} style={pitStyle}>
+                      {n}
+                    </PitComponent>
+                  );
+                })}
               {children}
             </View>
           </View>
@@ -447,60 +464,59 @@ const withRheostat = (ChartCompo = null) => {
 };
 
 const Style = StyleSheet.create({
-
   container: {
     marginTop: 30,
     marginHorizontal: 10,
-    position: 'relative',
+    position: "relative",
     marginBottom: 20,
   },
   rheostatHorizontal: {
-    position: 'relative',
+    position: "relative",
   },
   handle: {
-    backgroundColor: 'white',
-    width: '100%',
-    height: '100%',
+    backgroundColor: "white",
+    width: "100%",
+    height: "100%",
   },
   handleContainer: {
     zIndex: 3,
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: -15,
     bottom: -10,
   },
   progressContainer: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   rheostatBackground: {
     // backgroundColor: '#fcfcfc',
-    borderColor: '#d8d8d8',
+    borderColor: "#d8d8d8",
     borderBottomWidth: 1,
     borderTopWidth: 1,
-    position: 'relative',
+    position: "relative",
   },
   rheostatHorizontalBackground: {
     height: 1,
-    width: '100%',
+    width: "100%",
   },
   rheostatProgress: {
-    position: 'absolute',
+    position: "absolute",
   },
   rheostatHorizontalProgress: {
     height: 13,
     top: 2,
   },
   fullTrack: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   track: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   touch: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
 });
 
