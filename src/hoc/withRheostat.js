@@ -105,6 +105,23 @@ const withRheostat = (ChartCompo = null) => {
       );
     }
 
+    componentDidUpdate(prevProps) {
+      if (
+        prevProps.values !== this.props.values &&
+        this.state.handlePos.length === this.props.values.length
+      ) {
+        this.state.handlePos.forEach((pos, index) => {
+          pos.setValue(
+            this.props.algorithm.getPosition(
+              this.props.values[index],
+              this.props.min,
+              this.props.max
+            )
+          );
+        });
+      }
+    }
+
     getClosestSnapPoint(value) {
       const { snapPoints } = this.props;
       if (!snapPoints.length) return value;
