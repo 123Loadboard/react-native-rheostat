@@ -339,9 +339,8 @@ const withRheostat = (ChartCompo = null) => {
                 inputRange: [0, 100],
                 outputRange: [0, containerSize.width],
               }, { useNativeDriver: true });
-              const handleStyle = orientation === 'vertical'
-                ? { transform: [{ translateY: pos }] }
-                : { transform: [{ translateX: pos }] };
+              const handleStyle =
+                orientation === "vertical" ? { top: pos } : { left: pos };
               return (
                 <Animated.View
                   style={[Style.handleContainer, handleStyle, handleContainerStyle]}
