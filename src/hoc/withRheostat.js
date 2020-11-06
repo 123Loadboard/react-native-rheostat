@@ -388,9 +388,7 @@ const withRheostat = (ChartCompo = null) => {
                     renderToHardwareTextureAndroid
                     style={[{ position: 'absolute', height: 'auto' }, this.getProgressStyle(idx)]}
                   >
-                    <TouchableOpacity activeOpacity={1}>
-                      <ProgressBar theme={theme} />
-                    </TouchableOpacity>
+                    <ProgressBar theme={theme} />
                   </Animated.View>
                 );
               })}
